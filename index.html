@@ -295,7 +295,7 @@
                         });
                         const data = await res.json();
                         if(data && data.transactions) {
-                            const found = data.transactions.find(t => t.transaction_content.includes(\`DH \${phone}\`));
+                            const found = data.transactions.find(t => t.transaction_content.includes("DH " + phone));
                             if(found) {
                                 document.getElementById("payment-status").innerHTML = "🎉 Cảm ơn bạn! Đã nhận được 2000đ thành công!";
                                 document.getElementById("payment-status").style.color = "#2e7d32";
