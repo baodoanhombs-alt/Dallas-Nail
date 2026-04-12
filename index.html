@@ -275,7 +275,7 @@
                 const phone = document.getElementById('custPhone').value.replace(/[^a-zA-Z0-9 ]/g, "");
                 
                 // Đồng bộ Đơn Hàng qua Local CRM Admin Panel
-                fetch('/api/booking', {
+                fetch('https://dallas-nail.onrender.com/api/booking', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
@@ -306,7 +306,7 @@
                         
                         // 1. Cố gắng gọi Backend Cục Bộ (nếu bạn đang chạy bằng app.py localhost)
                         try {
-                            const res = await fetch(`/api/check_payment?phone=${phone}`);
+                            const res = await fetch(`https://dallas-nail.onrender.com/api/check_payment?phone=${phone}`);
                             if (res.ok) {
                                 const data = await res.json();
                                 if(data.success) isSuccess = true;
