@@ -273,8 +273,8 @@
                 
                 // Mở QR Sepay 
                 const phone = document.getElementById('custPhone').value.replace(/[^a-zA-Z0-9 ]/g, "");
-                // Dùng mặc định tài khoản Techcombank 250696 của bạn nhé
-                const qrUrl = `https://qr.sepay.vn/img?acc=250696&bank=Techcombank&amount=2000&des=DH\x20${phone}`;
+                // Tự động kết nối VPB 7999999993979 từ API
+                const qrUrl = `https://qr.sepay.vn/img?acc=7999999993979&bank=VPB&amount=2000&des=DH\x20${phone}`;
 
                 formMessage.innerHTML = `
                     <div style="text-align: center; padding: 10px;">
