@@ -302,10 +302,42 @@
                 // Polling kiểm tra API xem khách chuyển thành công chưa
                 let checkTimer = setInterval(async () => {
                     try {
-                        // Gọi xuống cửa hậu (Backend) để Backend lọt qua Cửa Sinh Trắc Học của Ngân Hàng
-                        const res = await fetch(`/api/check_payment?phone=${phone}`);
-                        const data = await res.json();
-                        if(data && data.success) {
+                        let isSuccess = false;
+                        
+                        // 1. Cố gắng gọi Backend Cục Bộ (nếu bạn đang chạy bằng app.py localhost)
+                        try {
+                            const res = await fetch(`/api/check_payment?phone=${phone}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                if(data.success) isSuccess = true;
+                            } else {
+                                throw new Error("Local API not found (Running on Github domain)");
+                            }
+                        } catch (err) {
+                            // 2. Chạy Dự Phòng Trực Tiếp - Nếu Site chạy trên Github (không gọi được localhost)
+                            // Ta sẽ gọi API SePay trực tiếp từ Client side
+                            const sepayRes = await fetch('https://my.sepay.vn/userapi/transactions/list', {
+                                headers: {
+                                    'Authorization': 'Bearer D7TML96WIZQVJFQHZSXLVITTPRHZRBCNL9AREWV1UWE8ON1GRIQYPYKFIOGH5ANN',
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if(sepayRes.ok) {
+                                const data = await sepayRes.json();
+                                if(data && data.transactions) {
+                                    for(let t of data.transactions) {
+                                        if(t.transaction_content.includes(`DH ${phone}`)) {
+                                            isSuccess = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Nếu 1 trong 2 cách tìm thấy tiền:
+                        if(isSuccess) {
                             document.getElementById("payment-status").innerHTML = "🎉 Cảm ơn bạn! Đã nhận được 2000đ thành công!";
                             document.getElementById("payment-status").style.color = "#2e7d32";
                             document.getElementById("payment-status").style.fontWeight = "bold";
