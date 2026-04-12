@@ -95,33 +95,33 @@
 
     async function loadData() {
         // Load Products
-        let res = await fetch('/api/products');
+        let res = await fetch('https://dallas-nail.onrender.com/api/products');
         let prods = await res.json();
         let html = '';
         let optHtml = '';
         prods.forEach(p => {
             html += `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.stock}</td><td>$${p.price}</td>
-                     <td><button class="btn-danger" onclick="del('/api/products/${p.id}')">Xóa</button></td></tr>`;
+                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/products/${p.id}')">Xóa</button></td></tr>`;
             optHtml += `<option value="${p.id}">${p.name} (Tồn: ${p.stock})</option>`;
         });
         document.getElementById('products-table').innerHTML = html;
         document.getElementById('o-product').innerHTML = optHtml;
 
         // Load Customers
-        res = await fetch('/api/customers');
+        res = await fetch('https://dallas-nail.onrender.com/api/customers');
         let custs = await res.json();
         html = '';
         optHtml = '';
         custs.forEach(c => {
             html += `<tr><td>${c.id}</td><td>${c.name}</td><td>${c.phone}</td>
-                     <td><button class="btn-danger" onclick="del('/api/customers/${c.id}')">Xóa</button></td></tr>`;
+                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/customers/${c.id}')">Xóa</button></td></tr>`;
             optHtml += `<option value="${c.id}">${c.name} - ${c.phone}</option>`;
         });
         document.getElementById('customers-table').innerHTML = html;
         document.getElementById('o-customer').innerHTML = optHtml;
 
         // Load Orders
-        res = await fetch('/api/orders');
+        res = await fetch('https://dallas-nail.onrender.com/api/orders');
         let ords = await res.json();
         html = '';
         ords.forEach(o => {
@@ -131,7 +131,7 @@
             
             html += `<tr><td>#${o.id}</td><td>${o.customer_name}</td><td>${o.product_name}</td><td>$${o.amount}</td>
                      <td>${statusBadge}</td>
-                     <td><button class="btn-danger" onclick="del('/api/orders/${o.id}')">Xóa</button></td></tr>`;
+                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/orders/${o.id}')">Xóa</button></td></tr>`;
         });
         document.getElementById('orders-table').innerHTML = html;
     }
@@ -139,7 +139,7 @@
     async function addProduct() {
         let name = document.getElementById('p-name').value;
         if(!name) return alert("Nhập tên!");
-        await fetch('/api/products', {
+        await fetch('https://dallas-nail.onrender.com/api/products', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({
                 name: name,
@@ -154,7 +154,7 @@
     async function addCustomer() {
         let name = document.getElementById('c-name').value;
         if(!name) return alert("Nhập tên!");
-        await fetch('/api/customers', {
+        await fetch('https://dallas-nail.onrender.com/api/customers', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ name: name, phone: document.getElementById('c-phone').value, zalo: '' })
         });
@@ -162,7 +162,7 @@
     }
 
     async function addOrder() {
-        await fetch('/api/orders', {
+        await fetch('https://dallas-nail.onrender.com/api/orders', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ 
                 customer_id: document.getElementById('o-customer').value,
@@ -176,7 +176,7 @@
 
     async function markSuccess(id) {
         if(confirm("Bạn có chắc chắn khách hàng đã chuyển khoản thành công? Cập nhật đơn này sang Success?")) {
-            await fetch(`/api/orders/${id}`, {
+            await fetch(`https://dallas-nail.onrender.com/api/orders/${id}`, {
                 method:'PUT', headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ status: 'success' })
             });
