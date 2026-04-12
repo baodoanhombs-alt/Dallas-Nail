@@ -267,8 +267,22 @@
             })
             .then(response => {
                 formMessage.style.display = 'block';
-                formMessage.style.color = '#2e7d32'; // Xanh
-                formMessage.innerHTML = '✅ Thông tin của bạn đã được gửi thành công! Chúng tôi sẽ liên hệ sớm nhất.';
+                formMessage.style.color = '#333';
+                formMessage.style.background = '#f9fcf9';
+                formMessage.style.border = '1px solid #c8e6c9';
+                
+                // Tạo link QR Sepay sử dụng thông tin form nhập
+                const phone = document.getElementById('custPhone').value.replace(/[^a-zA-Z0-9 ]/g, "");
+                const qrUrl = `https://qr.sepay.vn/img?acc=19135596027011&bank=Techcombank&amount=2000&des=DH\x20${phone}`;
+
+                formMessage.innerHTML = `
+                    <div style="text-align: center; padding: 10px;">
+                        <h3 style="color: #2e7d32; margin-bottom: 10px; font-size: 1.2rem;">✅ Đặt lịch thành công!</h3>
+                        <p style="margin-bottom: 15px; color: #555; font-size: 0.95rem;">Vui lòng quét mã bên dưới để chuyển <strong>2.000đ</strong> cọc giữ chỗ.</p>
+                        <img src="${qrUrl}" alt="Mã QR Thanh Toán" style="width: 220px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="margin-top: 15px; font-size: 0.85em; color: #777;">Trạng thái: ⏳ Đang chờ thanh toán...</p>
+                    </div>
+                `;
                 form.reset();
             })
             .catch(error => {
