@@ -187,6 +187,11 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="custEmail">Email của chị là gì để bên em gửi tài liệu và gợi ý ạ?</label>
+                    <input type="email" id="custEmail" name="Email" placeholder="Địa chỉ email" required>
+                </div>
+
+                <div class="form-group">
                     <label for="custService">Chị đang quan tâm đến dịch vụ nào nhất ạ?</label>
                     <input type="text" id="custService" name="Service" placeholder="VD: Cắt da sơn gel, Đắp bột, Vẽ art..." required>
                 </div>
@@ -274,23 +279,32 @@
                 // Mở QR Sepay 
                 const phone = document.getElementById('custPhone').value.replace(/[^a-zA-Z0-9 ]/g, "");
                 
+                let orderId = null;
                 // Đồng bộ Đơn Hàng qua Local CRM Admin Panel
-                fetch('https://dallas-nail.onrender.com/api/booking', {
+                fetch('/api/booking', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
                         name: document.getElementById('custName').value, 
-                        phone: phone, 
+                        phone: phone,
+                        email: document.getElementById('custEmail').value,
                         service: document.getElementById('custService').value || 'Dịch vụ website' 
                     })
-                }).catch(e => console.log(e));
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.order_id) {
+                        orderId = data.order_id;
+                    }
+                })
+                .catch(e => console.log(e));
 
                 // Tự động kết nối VPB 7999999993979 từ API
                 const qrcodeText = `DH ${phone}`;
                 const qrUrl = `https://qr.sepay.vn/img?acc=7999999993979&bank=VPB&amount=2000&des=${encodeURIComponent(qrcodeText)}`;
 
                 formMessage.innerHTML = `
-                    <div style="text-align: center; padding: 10px;">
+                    <div id="payment-container" style="text-align: center; padding: 10px;">
                         <h3 style="color: #2e7d32; margin-bottom: 10px; font-size: 1.2rem;">✅ Chốt đơn thành công!</h3>
                         <p style="margin-bottom: 15px; color: #555; font-size: 0.95rem;">Quét mã dưới đây để chuyển khoản <strong>2.000đ</strong> hoàn tất nhé.</p>
                         <img src="${qrUrl}" alt="Mã QR" style="width: 220px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -304,43 +318,70 @@
                     try {
                         let isSuccess = false;
                         
-                        // 1. Cố gắng gọi Backend Cục Bộ (nếu bạn đang chạy bằng app.py localhost)
-                        try {
-                            const res = await fetch(`https://dallas-nail.onrender.com/api/check_payment?phone=${phone}`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if(data.success) isSuccess = true;
-                            } else {
-                                throw new Error("Local API not found (Running on Github domain)");
-                            }
-                        } catch (err) {
-                            // 2. Chạy Dự Phòng Trực Tiếp - Nếu Site chạy trên Github (không gọi được localhost)
-                            // Ta sẽ gọi API SePay trực tiếp từ Client side
-                            const sepayRes = await fetch('https://my.sepay.vn/userapi/transactions/list', {
-                                headers: {
-                                    'Authorization': 'Bearer D7TML96WIZQVJFQHZSXLVITTPRHZRBCNL9AREWV1UWE8ON1GRIQYPYKFIOGH5ANN',
-                                    'Content-Type': 'application/json'
+                        // 1. Nếu có Order ID, kiểm tra trạng thái từ database (Hỗ trợ Admin cập nhật thủ công)
+                        if (orderId) {
+                            try {
+                                const orderRes = await fetch(`/api/orders/${orderId}/status`);
+                                if (orderRes.ok) {
+                                    const orderData = await orderRes.json();
+                                    if (orderData.status === 'success' || orderData.status === 'Thành công' || orderData.status === 'Đã thanh toán') {
+                                        isSuccess = true;
+                                    }
                                 }
-                            });
-                            
-                            if(sepayRes.ok) {
-                                const data = await sepayRes.json();
-                                if(data && data.transactions) {
-                                    for(let t of data.transactions) {
-                                        if(t.transaction_content.includes(`DH ${phone}`)) {
-                                            isSuccess = true;
-                                            break;
+                            } catch(e) { console.log(e); }
+                        }
+                        
+                        // 2. Cố gắng gọi Backend Cục Bộ (nếu chưa xác nhận được)
+                        if (!isSuccess) {
+                            try {
+                                const res = await fetch(`/api/check_payment?phone=${phone}`);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if(data.success) isSuccess = true;
+                                } else {
+                                    throw new Error("Local API not found (Running on Github domain)");
+                                }
+                            } catch (err) {
+                                // 3. Chạy Dự Phòng Trực Tiếp - Nếu Site chạy trên Github (không gọi được localhost)
+                                // Ta sẽ gọi API SePay trực tiếp từ Client side
+                                const sepayRes = await fetch('https://my.sepay.vn/userapi/transactions/list', {
+                                    headers: {
+                                        'Authorization': 'Bearer D7TML96WIZQVJFQHZSXLVITTPRHZRBCNL9AREWV1UWE8ON1GRIQYPYKFIOGH5ANN',
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                
+                                if(sepayRes.ok) {
+                                    const data = await sepayRes.json();
+                                    if(data && data.transactions) {
+                                        for(let t of data.transactions) {
+                                            if(t.transaction_content.includes(`DH ${phone}`)) {
+                                                isSuccess = true;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                         
-                        // Nếu 1 trong 2 cách tìm thấy tiền:
+                        // Nếu 1 trong các cách xác nhận thành công:
                         if(isSuccess) {
-                            document.getElementById("payment-status").innerHTML = "🎉 Cảm ơn bạn! Đã nhận được 2000đ thành công!";
-                            document.getElementById("payment-status").style.color = "#2e7d32";
-                            document.getElementById("payment-status").style.fontWeight = "bold";
+                            const paymentContainer = document.getElementById("payment-container");
+                            if (paymentContainer) {
+                                paymentContainer.innerHTML = `
+                                    <div style="animation: fadeIn 0.5s;">
+                                        <h2 style="color: #2e7d32; font-size: 1.8rem; margin-bottom: 15px;">
+                                            🎉 Thành Công! ✅
+                                        </h2>
+                                        <div style="font-size: 3rem; margin-bottom: 10px;">🎆✨</div>
+                                        <p style="color: #333; font-size: 1.1rem; line-height: 1.5; font-weight: 500;">
+                                            Cảm ơn bạn đã thanh toán thành công!<br>
+                                            Chúng tôi đã xác nhận lịch hẹn và sẽ liên hệ sớm nhất.
+                                        </p>
+                                    </div>
+                                `;
+                            }
                             clearInterval(checkTimer);
                         }
                     } catch(e) { console.log(e); }
