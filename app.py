@@ -3,6 +3,7 @@ from flask_cors import CORS
 import sqlite3
 import os
 import datetime
+import threading
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app) # CHo phép Netlify gọi API từ Render
@@ -61,11 +62,89 @@ def check_payment():
     return jsonify({"success": False})
 
 # ================= CLIENT API =================
+def send_resend_email(to_email, subject, html_content):
+    try:
+        import resend
+        with open('resend_config.txt', 'r') as f:
+            resend.api_key = f.read().strip()
+        params = {
+            "from": "onboarding@resend.dev",
+            "to": to_email,
+            "subject": subject,
+            "html": html_content
+        }
+        resend.Emails.send(params)
+    except Exception as e:
+        pass
+
+def run_email_sequence(email, name, host_url):
+    is_test = '+test' in email.lower()
+    
+    # Resend Free Tier bắt buộc phải gửi chính xác email gốc, không cho dùng alias +test.
+    # Nên ta phải cắt bỏ chữ +test đi trước khi nhét vào hàm send.
+    if is_test:
+        email = email.lower().replace('+test', '')
+    
+    # Email 1
+    subject1 = "Chào mừng bạn! Cảm ơn bạn đã chọn tiệm của chúng mình 💕"
+    html1 = f"""
+    <p>Chào {name},</p>
+    <p>Mình vừa nhận được thông tin đăng ký của bạn. Cảm ơn bạn rất nhiều vì đã tin tưởng và lựa chọn dịch vụ của tụi mình!</p>
+    <p>Thật ra, dạo gần đây tiệm đang được mọi người nhiệt tình ủng hộ nên lịch có hơi kín một chút. Nhưng bạn hoàn toàn yên tâm nhé, mình đang cẩn thận sắp xếp thời gian ưu tiên để có thể đón tiếp và phục vụ bạn chu đáo nhất.</p>
+    <p>Tiêu chí của tiệm là luôn chăm chút từng chi tiết nhỏ để mỗi khách hàng khi ngắm nhìn bộ móng của mình đều phải thốt lên "quá tuyệt". Nên bạn kiên nhẫn chờ mình một chút xíu nha.</p>
+    <p>Trong vài ngày tới, mình sẽ gửi tặng bạn một số bí quyết chăm sóc móng siêu đơn giản nhưng cực kỳ hiệu quả tại nhà.</p>
+    <p>Chúc bạn một ngày thật rạng rỡ và mong sớm được gặp bạn!</p>
+    """
+    
+    # Gửi ngay Email 1
+    send_resend_email(email, subject1, html1)
+    
+    # Set delay: trong chế độ test chờ 2 giây, nếu không chờ 2 ngày.
+    delay2 = 2 if is_test else 2 * 24 * 3600
+    
+    def send_email2():
+        subject2 = "Bí quyết nhỏ \"kéo dài tuổi thọ\" cho bộ móng của bạn 💅"
+        html2 = f"""
+        <p>Chào {name}, ngày hôm nay của bạn thế nào?</p>
+        <p>Hôm nay tụi mình xin phép chia sẻ một vài "bí kíp nghề nghiệp" giúp bạn luôn giữ được đôi tay ngọc ngà, hoàn toàn không quảng cáo dịch vụ đâu nè.</p>
+        <p>Thật ra, mình nhận thấy rất nhiều bạn vô tình dùng móng tay để bóc các vật cứng hoặc tự cạy nắp chai. Thói quen này vô tình phá vỡ cấu trúc bảo vệ, khiến móng rất dễ bị xước và gãy.</p>
+        <p>Làm này đi: Mỗi tối trước khi đi ngủ, bạn hãy thoa một lớp mỏng dầu dưỡng (cuticle oil) hoặc kem dưỡng ẩm lên vùng viền da quanh móng nhé. Cách đơn giản này giúp viền da không bị khô bong tróc, đồng thời nuôi dưỡng móng cứng cáp hơn hẳn. Nhờ vậy, khi làm nail lớp sơn cũng sẽ bền màu và bóng bẩy hơn rất nhiều.</p>
+        <p>Một thay đổi nhỏ thôi nhưng mang lại hiệu quả bất ngờ đấy! Bạn hãy thử áp dụng xem sao nhé.</p>
+        <p>Hẹn gặp lại bạn trong bức thư sau!</p>
+        """
+        send_resend_email(email, subject2, html2)
+        
+        # Set delay: trong chế độ test chờ thêm 2 giây, nếu không chờ thêm 1 ngày.
+        delay3 = 2 if is_test else 1 * 24 * 3600
+        
+        def send_email3():
+            subject3 = "Sẵn sàng tỏa sáng cùng bộ móng mới chưa bạn ơi? ✨"
+            payment_link = f"{host_url}#booking"
+            html3 = f"""
+            <p>Chào {name}, những ngày cuối tuần thảnh thơi lại sắp đến rồi!</p>
+            <p>Khi móng tay đã được chăm sóc khỏe mạnh, đây chính là thời điểm hoàn hảo nhất để khoác lên chúng một diện mạo thật nổi bật. Hiện tại, tiệm mình đang có các dịch vụ chăm sóc với mức giá vô cùng yêu thương:</p>
+            <ul>
+                <li><strong>Dịch vụ Nail chuyên sâu:</strong> 10$</li>
+                <li><strong>Vẽ Art độc quyền, thiết kế theo yêu cầu:</strong> 2$</li>
+            </ul>
+            <p>Thật ra, một bộ nail được chăm chút tỉ mỉ không chỉ làm đôi tay thêm phần kiêu kỳ mà còn mang lại cho bạn sự tự tin tuyệt đối trong mỗi dịp hẹn hò hay dạo phố. Nhưng mà lịch hẹn cuối tuần thường được ưu tiên đặt kín rất sớm.</p>
+            <p>Để không phải chờ đợi lâu hay lỡ mất dịp làm đẹp, bạn làm này đi: Hãy nhấn ngay vào đường link bên dưới để giữ chỗ và hoàn tất đặt lịch nhé. Khi bạn đến tiệm, mọi việc làm đẹp cứ để tụi mình lo:</p>
+            <p>🔗 <strong><a href="{payment_link}">[LINK TRANG THANH TOÁN]</a></strong></p>
+            <p>Tụi mình đang rất mong chờ được tự tay làm đẹp cho bạn. Hẹn gặp bạn tại tiệm nha!</p>
+            """
+            send_resend_email(email, subject3, html3)
+            
+        threading.Timer(delay3, send_email3).start()
+
+    threading.Timer(delay2, send_email2).start()
+
+# ================= CLIENT API =================
 @app.route('/api/booking', methods=['POST'])
 def handle_booking():
     data = request.json
     name = data.get('name')
     phone = data.get('phone')
+    email = data.get('email')
     service = data.get('service', 'Dịch vụ website')
     amount = 2 # Giả định $2 cho khoản phí giữ chỗ (2000đ)
     
@@ -77,7 +156,7 @@ def handle_booking():
     if row:
         customer_id = row['id']
     else:
-        cursor.execute("INSERT INTO customers (name, phone) VALUES (?, ?)", (name, phone))
+        cursor.execute("INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)", (name, phone, email))
         customer_id = cursor.lastrowid
         
     cursor.execute("SELECT id FROM products WHERE name = ?", (service,))
@@ -91,7 +170,13 @@ def handle_booking():
     cursor.execute("INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, 'pending')",
                    (customer_id, product_id, amount))
     conn.commit()
-    return jsonify({"status": "success"})
+    order_id = cursor.lastrowid
+    
+    # Gửi chuỗi email Welcome -> Nurture -> Sales bằng background thread
+    host_url = request.host_url
+    threading.Thread(target=run_email_sequence, args=(email, name, host_url)).start()
+        
+    return jsonify({"status": "success", "order_id": order_id})
 
 
 # ================= PRODUCTS API =================
@@ -130,8 +215,8 @@ def handle_customers():
         return jsonify([dict(ix) for ix in rows])
     elif request.method == 'POST':
         data = request.json
-        cursor.execute("INSERT INTO customers (name, phone, zalo) VALUES (?, ?, ?)",
-                       (data.get('name'), data.get('phone'), data.get('zalo')))
+        cursor.execute("INSERT INTO customers (name, phone, email, zalo) VALUES (?, ?, ?, ?)",
+                       (data.get('name'), data.get('phone'), data.get('email'), data.get('zalo')))
         conn.commit()
         return jsonify({"status": "success", "id": cursor.lastrowid})
 
@@ -152,7 +237,7 @@ def handle_orders():
     if request.method == 'GET':
         query = '''
             SELECT o.id, o.amount, o.status, o.purchase_date,
-                   c.name as customer_name, p.name as product_name
+                   c.name as customer_name, c.email as customer_email, p.name as product_name
             FROM orders o
             LEFT JOIN customers c ON o.customer_id = c.id
             LEFT JOIN products p ON o.product_id = p.id
@@ -168,6 +253,11 @@ def handle_orders():
         customer_id = int(data.get('customer_id'))
         amount = float(data.get('amount', 0))
         
+        cursor.execute("SELECT name, email FROM customers WHERE id = ?", (customer_id,))
+        customer_row = cursor.fetchone()
+        cursor.execute("SELECT name FROM products WHERE id = ?", (product_id,))
+        product_row = cursor.fetchone()
+        
         # Thêm đơn hàng
         cursor.execute("INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, 'pending')",
                        (customer_id, product_id, amount))
@@ -176,7 +266,30 @@ def handle_orders():
         cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0", (product_id,))
         
         conn.commit()
-        return jsonify({"status": "success", "id": cursor.lastrowid})
+        order_id = cursor.lastrowid
+        
+        if customer_row and customer_row['email'] and product_row:
+            cust_name = customer_row['name']
+            cust_email = customer_row['email']
+            prod_name = product_row['name']
+            
+            if '+test' in cust_email.lower():
+                cust_email = cust_email.lower().replace('+test', '')
+                
+            subject = f"Xác nhận đơn hàng: {prod_name} tại Happy Nail 💅"
+            html = f"""
+            <p>Chào {cust_name},</p>
+            <p>Cảm ơn bạn rất nhiều vì đã tin tưởng và ủng hộ dịch vụ của tụi mình 💕</p>
+            <p>Tụi mình xác nhận đã lên đơn thành công dịch vụ/sản phẩm <b>{prod_name}</b> cho bạn với mức phí là <b>${amount}</b>.</p>
+            <p><b>Hướng dẫn sử dụng dịch vụ:</b><br>
+            Bạn làm này đi: Khi đến tiệm, bạn chỉ cần đọc số điện thoại đã đăng ký, hệ thống của tụi mình sẽ nhận diện và ưu tiên đón tiếp bạn ngay lập tức nhé. Không cần phải in hóa đơn hay thủ tục rườm rà đâu.</p>
+            <p>Nếu có bất kỳ thắc mắc nào lúc đến, đừng ngại nhắn hay phản hồi lại email này. Tụi mình luôn ở đây để giúp bạn.</p>
+            <p>Chúc bạn một ngày rạng rỡ và mong sớm được gặp bạn,<br>Happy Nail Team ✨</p>
+            """
+            
+            threading.Thread(target=send_resend_email, args=(cust_email, subject, html)).start()
+            
+        return jsonify({"status": "success", "id": order_id})
 
 @app.route('/api/orders/<int:id>', methods=['DELETE', 'PUT'])
 def modify_order(id):
@@ -192,6 +305,16 @@ def modify_order(id):
             cursor.execute("UPDATE orders SET status = ? WHERE id = ?", (data['status'], id))
             conn.commit()
             return jsonify({"status": "success"})
+
+@app.route('/api/orders/<int:id>/status', methods=['GET'])
+def get_order_status(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT status FROM orders WHERE id = ?", (id,))
+    row = cursor.fetchone()
+    if row:
+        return jsonify({"status": row['status']})
+    return jsonify({"error": "Order not found"}), 404
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
