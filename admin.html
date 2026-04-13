@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h1 { color: #d68f6c; margin-top: 0; }
         .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
         .tab { padding: 10px 20px; cursor: pointer; font-weight: 500; color: #666; transition: 0.3s; }
@@ -17,17 +17,19 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background: #f9f9f9; color: #555; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        th { background: #f9f9f9; color: #555; font-weight: 600; }
         button { background: #d68f6c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
         button:hover { background: #b0704f; }
         button.btn-danger { background: #e57373; }
         button.btn-danger:hover { background: #c62828; }
-        .form-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
-        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; outline: none; }
+        .form-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 0.9rem; }
+        input:focus, select:focus { border-color: #d68f6c; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
         .bg-pending { background: #ffe0b2; color: #e65100; }
         .bg-success { background: #c8e6c9; color: #1b5e20; }
+        .table-wrapper { overflow-x: auto; }
     </style>
 </head>
 <body>
@@ -50,23 +52,37 @@
             <input type="text" id="p-desc" placeholder="Mô tả ngắn">
             <button onclick="addProduct()"><i class="ph ph-plus"></i> Thêm</button>
         </div>
-        <table>
-            <thead><tr><th>ID</th><th>Tên</th><th>Khối lượng/Kho</th><th>Giá</th><th>Thao tác</th></tr></thead>
-            <tbody id="products-table"></tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>ID</th><th>Tên</th><th>Khối lượng/Kho</th><th>Giá</th><th>Thao tác</th></tr></thead>
+                <tbody id="products-table"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- CUSTOMERS TAB -->
     <div id="customers" class="tab-content">
         <div class="form-group">
             <input type="text" id="c-name" placeholder="Tên khách hàng" required>
-            <input type="text" id="c-phone" placeholder="Số điện thoại" required>
+            <input type="tel" id="c-phone" placeholder="Số điện thoại" required>
+            <input type="email" id="c-email" placeholder="Email của khách" required>
             <button onclick="addCustomer()"><i class="ph ph-plus"></i> Thêm</button>
         </div>
-        <table>
-            <thead><tr><th>ID</th><th>Tên</th><th>SĐT</th><th>Thao tác</th></tr></thead>
-            <tbody id="customers-table"></tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên</th>
+                        <th>SĐT</th>
+                        <th style="min-width: 220px;"><strong>📧 Email</strong></th>
+                        <th>Ngày Đăng Ký</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="customers-table"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- ORDERS TAB -->
@@ -77,14 +93,18 @@
             <input type="number" id="o-amount" placeholder="Giá ($)" required>
             <button onclick="addOrder()"><i class="ph ph-plus"></i> Tạo đơn</button>
         </div>
-        <table>
-            <thead><tr><th>ID</th><th>Khách Hàng</th><th>Sản Phẩm</th><th>Số Tiền</th><th>Trạng Thái</th><th>Thao Tác</th></tr></thead>
-            <tbody id="orders-table"></tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>ID</th><th>Khách Hàng</th><th>📧 Email</th><th>Sản Phẩm</th><th>Số Tiền</th><th>Trạng Thái</th><th>Thao Tác</th></tr></thead>
+                <tbody id="orders-table"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
+    const API_URL = '';
+
     function switchTab(tabId) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -95,103 +115,180 @@
 
     async function loadData() {
         // Load Products
-        let res = await fetch('https://dallas-nail.onrender.com/api/products');
-        let prods = await res.json();
-        let html = '';
-        let optHtml = '';
-        prods.forEach(p => {
-            html += `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.stock}</td><td>$${p.price}</td>
-                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/products/${p.id}')">Xóa</button></td></tr>`;
-            optHtml += `<option value="${p.id}">${p.name} (Tồn: ${p.stock})</option>`;
-        });
-        document.getElementById('products-table').innerHTML = html;
-        document.getElementById('o-product').innerHTML = optHtml;
+        try {
+            let res = await fetch(`${API_URL}/api/products`);
+            let prods = await res.json();
+            let html = '';
+            let optHtml = '';
+            prods.forEach(p => {
+                html += `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.stock}</td><td>$${p.price}</td>
+                         <td><button class="btn-danger" onclick="del('${API_URL}/api/products/${p.id}')">Xóa</button></td></tr>`;
+                optHtml += `<option value="${p.id}">${p.name} (Tồn: ${p.stock})</option>`;
+            });
+            document.getElementById('products-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center">Chưa có sản phẩm</td></tr>';
+            document.getElementById('o-product').innerHTML = optHtml;
+        } catch (e) {
+            console.error('Error loading products:', e);
+        }
 
         // Load Customers
-        res = await fetch('https://dallas-nail.onrender.com/api/customers');
-        let custs = await res.json();
-        html = '';
-        optHtml = '';
-        custs.forEach(c => {
-            html += `<tr><td>${c.id}</td><td>${c.name}</td><td>${c.phone}</td>
-                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/customers/${c.id}')">Xóa</button></td></tr>`;
-            optHtml += `<option value="${c.id}">${c.name} - ${c.phone}</option>`;
-        });
-        document.getElementById('customers-table').innerHTML = html;
-        document.getElementById('o-customer').innerHTML = optHtml;
+        try {
+            let res = await fetch(`${API_URL}/api/customers`);
+            let custs = await res.json();
+            let html = '';
+            let optHtml = '';
+            custs.forEach(c => {
+                const registeredDate = c.registered_date ? new Date(c.registered_date).toLocaleDateString('vi-VN') : 'N/A';
+                html += `<tr>
+                    <td>${c.id}</td>
+                    <td>${c.name}</td>
+                    <td>${c.phone}</td>
+                    <td><strong style="color: #d68f6c;">${c.email || '❌ Chưa có'}</strong></td>
+                    <td>${registeredDate}</td>
+                    <td><button class="btn-danger" onclick="del('${API_URL}/api/customers/${c.id}')">Xóa</button></td>
+                </tr>`;
+                optHtml += `<option value="${c.id}">${c.name} - ${c.phone}</option>`;
+            });
+            document.getElementById('customers-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center">Chưa có khách hàng</td></tr>';
+            document.getElementById('o-customer').innerHTML = optHtml;
+        } catch (e) {
+            console.error('Error loading customers:', e);
+        }
 
         // Load Orders
-        res = await fetch('https://dallas-nail.onrender.com/api/orders');
-        let ords = await res.json();
-        html = '';
-        ords.forEach(o => {
-            let statusBadge = o.status === 'success' 
-                              ? `<span class="badge bg-success">Thành công</span>` 
-                              : `<span class="badge bg-pending" onclick="markSuccess(${o.id})" style="cursor:pointer" title="Bấm để xác nhận đã nhận tiền">Đang chờ (Click xác nhận)</span>`;
-            
-            html += `<tr><td>#${o.id}</td><td>${o.customer_name}</td><td>${o.product_name}</td><td>$${o.amount}</td>
-                     <td>${statusBadge}</td>
-                     <td><button class="btn-danger" onclick="del('https://dallas-nail.onrender.com/api/orders/${o.id}')">Xóa</button></td></tr>`;
-        });
-        document.getElementById('orders-table').innerHTML = html;
+        try {
+            let res = await fetch(`${API_URL}/api/orders`);
+            let ords = await res.json();
+            let html = '';
+            ords.forEach(o => {
+                let statusBadge = o.status === 'success' 
+                                  ? `<span class="badge bg-success">✓ Thành công</span>` 
+                                  : `<span class="badge bg-pending" onclick="markSuccess(${o.id})" style="cursor:pointer" title="Click để xác nhận">⏳ Chờ xác nhận</span>`;
+                
+                html += `<tr>
+                    <td>#${o.id}</td>
+                    <td>${o.customer_name}</td>
+                    <td><strong>${o.customer_email || '❌'}</strong></td>
+                    <td>${o.product_name}</td>
+                    <td>$${o.amount}</td>
+                    <td>${statusBadge}</td>
+                    <td><button class="btn-danger" onclick="del('${API_URL}/api/orders/${o.id}')">Xóa</button></td>
+                </tr>`;
+            });
+            document.getElementById('orders-table').innerHTML = html || '<tr><td colspan="7" style="text-align:center">Chưa có đơn hàng</td></tr>';
+        } catch (e) {
+            console.error('Error loading orders:', e);
+        }
     }
 
     async function addProduct() {
         let name = document.getElementById('p-name').value;
-        if(!name) return alert("Nhập tên!");
-        await fetch('https://dallas-nail.onrender.com/api/products', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-                name: name,
-                price: document.getElementById('p-price').value,
-                stock: document.getElementById('p-stock').value,
-                description: document.getElementById('p-desc').value
-            })
-        });
-        loadData();
+        if(!name) return alert("Nhập tên sản phẩm!");
+        try {
+            await fetch(`${API_URL}/api/products`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    name: name,
+                    price: document.getElementById('p-price').value || 0,
+                    stock: document.getElementById('p-stock').value || 0,
+                    description: document.getElementById('p-desc').value
+                })
+            });
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-stock').value = '';
+            document.getElementById('p-desc').value = '';
+            alert('Thêm sản phẩm thành công!');
+            loadData();
+        } catch (e) {
+            alert('Lỗi: ' + e);
+        }
     }
 
     async function addCustomer() {
         let name = document.getElementById('c-name').value;
-        if(!name) return alert("Nhập tên!");
-        await fetch('https://dallas-nail.onrender.com/api/customers', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ name: name, phone: document.getElementById('c-phone').value, zalo: '' })
-        });
-        loadData();
+        let phone = document.getElementById('c-phone').value;
+        let email = document.getElementById('c-email').value;
+        
+        if(!name) return alert("Nhập tên khách hàng!");
+        if(!phone) return alert("Nhập số điện thoại!");
+        if(!email) return alert("Nhập email!");
+        
+        try {
+            await fetch(`${API_URL}/api/customers`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ 
+                    name: name, 
+                    phone: phone, 
+                    email: email,
+                    zalo: ''
+                })
+            });
+            document.getElementById('c-name').value = '';
+            document.getElementById('c-phone').value = '';
+            document.getElementById('c-email').value = '';
+            alert('Thêm khách hàng thành công!');
+            loadData();
+        } catch (e) {
+            alert('Lỗi: ' + e);
+        }
     }
 
     async function addOrder() {
-        await fetch('https://dallas-nail.onrender.com/api/orders', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ 
-                customer_id: document.getElementById('o-customer').value,
-                product_id: document.getElementById('o-product').value,
-                amount: document.getElementById('o-amount').value
-            })
-        });
-        alert('Tạo đơn thành công! (Kho hàng đã bị trừ 1)');
-        loadData();
+        let customerId = document.getElementById('o-customer').value;
+        let productId = document.getElementById('o-product').value;
+        let amount = document.getElementById('o-amount').value;
+        
+        if(!customerId) return alert("Chọn khách hàng!");
+        if(!productId) return alert("Chọn sản phẩm!");
+        if(!amount) return alert("Nhập số tiền!");
+        
+        try {
+            await fetch(`${API_URL}/api/orders`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ 
+                    customer_id: customerId,
+                    product_id: productId,
+                    amount: amount
+                })
+            });
+            document.getElementById('o-amount').value = '';
+            alert('Tạo đơn thành công!');
+            loadData();
+        } catch (e) {
+            alert('Lỗi: ' + e);
+        }
     }
 
     async function markSuccess(id) {
-        if(confirm("Bạn có chắc chắn khách hàng đã chuyển khoản thành công? Cập nhật đơn này sang Success?")) {
-            await fetch(`https://dallas-nail.onrender.com/api/orders/${id}`, {
-                method:'PUT', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ status: 'success' })
-            });
-            loadData();
+        if(confirm("Xác nhận khách hàng đã chuyển khoản thành công?")) {
+            try {
+                await fetch(`${API_URL}/api/orders/${id}`, {
+                    method:'PUT', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ status: 'success' })
+                });
+                alert('Cập nhật thành công!');
+                loadData();
+            } catch (e) {
+                alert('Lỗi: ' + e);
+            }
         }
     }
 
     async function del(url) {
-        if(confirm('Chắc chắn xóa?')) {
-            await fetch(url, {method:'DELETE'});
-            loadData();
+        if(confirm("Bạn chắc chắn muốn xóa không?")) {
+            try {
+                await fetch(url, { method:'DELETE' });
+                alert('Xóa thành công!');
+                loadData();
+            } catch (e) {
+                alert('Lỗi: ' + e);
+            }
         }
     }
 
-    window.onload = loadData;
+    // Load data on page load
+    window.addEventListener('load', loadData);
 </script>
 
 </body>
