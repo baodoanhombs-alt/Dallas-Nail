@@ -26,10 +26,17 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             phone TEXT UNIQUE,
+            email TEXT,
             zalo TEXT,
             registered_date TEXT DEFAULT (datetime('now', 'localtime'))
         )
     ''')
+    
+    # Migration: Add email column if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE customers ADD COLUMN email TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     # 3. Bảng orders
     cursor.execute('''
