@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán - Happy Nail</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f4f6f8; padding: 20px; min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #d68f6c; margin-bottom: 30px; text-align: center; font-size: 28px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #d68f6c; box-shadow: 0 0 0 3px rgba(214, 143, 108, 0.1); }
+        .price-info { background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .price-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .price-row.total { border-top: 2px solid #ddd; padding-top: 10px; font-weight: 600; font-size: 1.1rem; color: #d68f6c; }
+        button { width: 100%; padding: 14px; background: #d68f6c; color: white; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+        button:hover { background: #b0704f; }
+        .qr-section { margin-top: 30px; padding-top: 30px; border-top: 2px solid #eee; text-align: center; display: none; }
+        .qr-section.show { display: block; }
+        .qr-section h2 { color: #d68f6c; margin-bottom: 20px; }
+        .qr-code { max-width: 300px; margin: 0 auto; }
+        .qr-code img { max-width: 100%; height: auto; border-radius: 8px; }
+        .success { background: #c8e6c9; color: #1b5e20; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: center; display: none; font-weight: 600; }
+        .success.show { display: block; }
+        .loading { text-align: center; margin-top: 20px; display: none; }
+        .loading.show { display: block; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #d68f6c; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error { background: #ffcdd2; color: #c62828; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: center; display: none; }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎁 Thanh Toán Dịch Vụ</h1>
+    
+    <form id="checkoutForm">
+        <div class="form-group">
+            <label for="fullname">Họ tên *</label>
+            <input type="text" id="fullname" required placeholder="Nguyễn Văn A">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Số điện thoại *</label>
+            <input type="tel" id="phone" required placeholder="0912345678">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" required placeholder="email@example.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="product">Chọn sản phẩm/dịch vụ *</label>
+            <select id="product" required>
+                <option value="">-- Chọn --</option>
+            </select>
+        </div>
+        
+        <div class="price-info">
+            <div class="price-row">
+                <span>Giá tiền:</span>
+                <span id="priceDisplay">0 VNĐ</span>
+            </div>
+            <div class="price-row total">
+                <span>Tổng cộng:</span>
+                <span id="totalDisplay">0 VNĐ</span>
+            </div>
+        </div>
+        
+        <button type="submit">Tiếp tục thanh toán</button>
+    </form>
+    
+    <div class="qr-section" id="qrSection">
+        <h2>📱 Quét mã QR để thanh toán</h2>
+        <div class="qr-code" id="qrCode"></div>
+        <p style="margin-top: 15px; color: #666;">
+            Nội dung chuyển khoản: <strong id="transferContent"></strong>
+        </p>
+        <p style="color: #999; margin-top: 10px; font-size: 0.9rem;">
+            Sau khi thanh toán, chúng mình sẽ nhận được thông báo trong vài giây. Cảm ơn bạn! 💕
+        </p>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Đang kiểm tra thanh toán...</p>
+    </div>
+    
+    <div class="success" id="success">
+        ✅ Thanh toán thành công! Chúng mình sẽ liên hệ bạn sớm. 
+    </div>
+    
+    <div class="error" id="error"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+    // Load sản phẩm
+    fetch('/api/products')
+        .then(r => r.json())
+        .then(products => {
+            const select = document.getElementById('product');
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} - ${p.price} USD`;
+                opt.dataset.price = p.price;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', updatePrice);
+        });
+    
+    function updatePrice() {
+        const select = document.getElementById('product');
+        const opt = select.options[select.selectedIndex];
+        const price = opt.dataset.price || 0;
+        document.getElementById('priceDisplay').textContent = (price * 24000) + ' VNĐ';
+        document.getElementById('totalDisplay').textContent = (price * 24000) + ' VNĐ';
+    }
+    
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fullname = document.getElementById('fullname').value;
+        const phone = document.getElementById('phone').value;
+        const email = document.getElementById('email').value;
+        const productId = document.getElementById('product').value;
+        
+        if (!productId) {
+            alert('Vui lòng chọn sản phẩm');
+            return;
+        }
+        
+        // Create order
+        const select = document.getElementById('product');
+        const opt = select.options[select.selectedIndex];
+        const amount = opt.dataset.price;
+        
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: fullname,
+                    phone: phone,
+                    email: email,
+                    product_id: productId,
+                    amount: amount
+                })
+            });
+            
+            const result = await res.json();
+            if (result.success) {
+                // Show QR
+                document.getElementById('checkoutForm').style.display = 'none';
+                document.getElementById('qrSection').classList.add('show');
+                
+                // Generate QR
+                const content = `DH ${phone}`;
+                document.getElementById('transferContent').textContent = content;
+                
+                new QRCode(document.getElementById('qrCode'), {
+                    text: content,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#d68f6c",
+                    colorLight: "#ffffff"
+                });
+                
+                // Start checking payment
+                checkPaymentStatus(phone);
+            } else {
+                showError('Lỗi tạo đơn hàng');
+            }
+        } catch (error) {
+            showError('Lỗi: ' + error.message);
+        }
+    });
+    
+    function checkPaymentStatus(phone) {
+        document.getElementById('loading').classList.add('show');
+        
+        const interval = setInterval(() => {
+            fetch(`/api/check_payment?phone=${phone}`)
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        clearInterval(interval);
+                        document.getElementById('loading').classList.remove('show');
+                        document.getElementById('success').classList.add('show');
+                    }
+                });
+        }, 2000); // Check every 2 seconds
+        
+        // Stop after 5 minutes
+        setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+    }
+    
+    function showError(msg) {
+        const err = document.getElementById('error');
+        err.textContent = msg;
+        err.classList.add('show');
+    }
+</script>
+
+</body>
+</html>
