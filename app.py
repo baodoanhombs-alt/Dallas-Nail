@@ -24,9 +24,9 @@ def get_db():
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/admin')
-def admin():
-    return app.send_static_file('admin.html')
+@app.route('/checkout')
+def checkout():
+    return app.send_static_file('checkout.html')
 
 @app.route('/api/check_payment')
 def check_payment():
@@ -139,6 +139,40 @@ def run_email_sequence(email, name, host_url):
     threading.Timer(delay2, send_email2).start()
 
 # ================= CLIENT API =================
+@app.route('/api/checkout', methods=['POST'])
+def handle_checkout():
+    """Endpoint để tạo đơn hàng từ trang thanh toán"""
+    data = request.json
+    name = data.get('name')
+    phone = data.get('phone')
+    email = data.get('email')
+    product_id = data.get('product_id')
+    amount = data.get('amount', 0)
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Thêm hoặc lấy khách hàng
+        cursor.execute("SELECT id FROM customers WHERE phone = ?", (phone,))
+        row = cursor.fetchone()
+        if row:
+            customer_id = row['id']
+        else:
+            cursor.execute("INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)", (name, phone, email))
+            customer_id = cursor.lastrowid
+        
+        # Tạo đơn hàng (status = pending)
+        cursor.execute("INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, 'pending')",
+                       (customer_id, product_id, amount))
+        conn.commit()
+        order_id = cursor.lastrowid
+        
+        return jsonify({"success": True, "order_id": order_id})
+    except Exception as e:
+        print(e)
+        return jsonify({"success": False, "error": str(e)}), 400
+
 @app.route('/api/booking', methods=['POST'])
 def handle_booking():
     data = request.json
@@ -276,15 +310,27 @@ def handle_orders():
             if '+test' in cust_email.lower():
                 cust_email = cust_email.lower().replace('+test', '')
                 
-            subject = f"Xác nhận đơn hàng: {prod_name} tại Happy Nail 💅"
+            subject = "✨ Đơn hàng của bạn đã được xác nhận! Chuẩn bị tỏa sáng đi nào 💅"
             html = f"""
             <p>Chào {cust_name},</p>
-            <p>Cảm ơn bạn rất nhiều vì đã tin tưởng và ủng hộ dịch vụ của tụi mình 💕</p>
-            <p>Tụi mình xác nhận đã lên đơn thành công dịch vụ/sản phẩm <b>{prod_name}</b> cho bạn với mức phí là <b>${amount}</b>.</p>
-            <p><b>Hướng dẫn sử dụng dịch vụ:</b><br>
-            Bạn làm này đi: Khi đến tiệm, bạn chỉ cần đọc số điện thoại đã đăng ký, hệ thống của tụi mình sẽ nhận diện và ưu tiên đón tiếp bạn ngay lập tức nhé. Không cần phải in hóa đơn hay thủ tục rườm rà đâu.</p>
-            <p>Nếu có bất kỳ thắc mắc nào lúc đến, đừng ngại nhắn hay phản hồi lại email này. Tụi mình luôn ở đây để giúp bạn.</p>
-            <p>Chúc bạn một ngày rạng rỡ và mong sớm được gặp bạn,<br>Happy Nail Team ✨</p>
+            <p>Cảm ơn bạn rất nhiều! Chúng mình vừa nhận được và xác nhận đơn hàng của bạn.</p>
+            <p><b>📋 Chi Tiết Đơn Hàng:</b></p>
+            <ul>
+                <li><b>Dịch vụ:</b> {prod_name}</li>
+                <li><b>Số tiền:</b> ${amount}</li>
+                <li><b>Mã đơn:</b> #{order_id}</li>
+            </ul>
+            <p>Bây giờ tiệp chúng mình sẽ chuẩn bị các trang thiết bị, màu sắc và kỹ thuật tốt nhất để chăm sóc cho bạn. Mình sẽ không vội vàng — vì chúng mình hiểu rằng những điều tuyệt vời cần phải có thời gian để hoàn thiện.</p>
+            <p><b>📍 Hướng Dẫn Tiếp Theo:</b></p>
+            <ol>
+                <li>Nếu bạn chưa có lịch cụ thể, hãy gọi hoặc nhắn zalo để tụi mình sắp xếp thời gian ưu tiên cho bạn.</li>
+                <li>Hãy chuẩn bị tinh thần thư giãn và tận hưởng khoảng thời gian dành riêng cho bản thân.</li>
+                <li>Nếu bạn có yêu cầu đặc biệt (màu sắc, thiết kế, chỉnh sửa nail cũ), bạn hoàn toàn có thể chia sẻ với chúng mình.</li>
+            </ol>
+            <p><b>💝 Lời Hứa Của Chúng Mình:</b><br>
+            Mỗi lần bạn đến tiệm, chúng mình sẽ làm cho bộ móng của bạn không chỉ đẹp, mà còn khỏe mạnh và bền bỉ. Đó là cam kết của Happy Nail với mỗi khách hàng.</p>
+            <p>Nếu có bất cứ thắc mắc gì trước ngày hẹn, bạn cứ liên hệ với chúng mình nhé. Chúng mình đang chờ được gặp bạn!</p>
+            <p>Hẹn gặp bạn tại tiệm sớm! 💕</p>
             """
             
             threading.Thread(target=send_resend_email, args=(cust_email, subject, html)).start()
