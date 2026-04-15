@@ -1,0 +1,44 @@
+=== TEST EMAIL WORKFLOW LOG ===
+
+[2026-04-15 00:25:53] 🚀 BẮT ĐẦU TEST EMAIL MARKETING WORKFLOW
+[2026-04-15 00:25:53] ============================================================
+[2026-04-15 00:25:53] 
+📝 TEST 1: Điền form booking với email +test
+[2026-04-15 00:25:53] ------------------------------------------------------------
+[2026-04-15 00:25:53] 📧 Gửi dữ liệu booking: {"name": "Nguyễn Thị Test", "phone": "0987654321", "email": "doanthuan+test@gmail.com", "service": "Dịch vụ Nail chuyên sâu"}
+[2026-04-15 00:25:55] ✅ Booking thành công! Order ID: 11
+[2026-04-15 00:25:55] 🎯 Hệ thống sẽ gửi 3 email tự động:
+[2026-04-15 00:25:55]    📧 Email 1 (Welcome): Gửi ngay lập tức
+[2026-04-15 00:25:55]    📧 Email 2 (Nurture): Gửi sau 2 giây (test mode)
+[2026-04-15 00:25:55]    📧 Email 3 (Sales): Gửi sau 2 giây nữa (test mode)
+[2026-04-15 00:25:55] ⏳ Chờ 5 giây để hệ thống xử lý...
+[2026-04-15 00:26:00] 
+👥 TEST 2: Lấy danh sách khách hàng
+[2026-04-15 00:26:00] ------------------------------------------------------------
+[2026-04-15 00:26:02] ✅ Lấy được 8 khách hàng
+[2026-04-15 00:26:02] Khách hàng test: pololanana (ID: 9, Email: 21312312@gmail.com)
+[2026-04-15 00:26:02] 
+📦 TEST 3: Lấy danh sách sản phẩm/dịch vụ
+[2026-04-15 00:26:02] ------------------------------------------------------------
+[2026-04-15 00:26:05] ✅ Lấy được 8 sản phẩm
+[2026-04-15 00:26:05] Sản phẩm test: Dịch vụ Nail chuyên sâu (ID: 8, Giá: $2.0)
+[2026-04-15 00:26:05] 
+📋 TEST 4: Tạo đơn hàng -> Gửi email xác nhận
+[2026-04-15 00:26:05] ------------------------------------------------------------
+[2026-04-15 00:26:05] 📧 Tạo đơn hàng: Customer ID 9 + Product ID 8
+[2026-04-15 00:26:07] ✅ Đơn hàng tạo thành công! Order ID: 12
+[2026-04-15 00:26:07] 📧 Email xác nhận đơn hàng sẽ được gửi tự động đến: 21312312@gmail.com
+[2026-04-15 00:26:07] 
+============================================================
+[2026-04-15 00:26:07] ✅ TEST HOÀN THÀNH!
+[2026-04-15 00:26:07] 
+📊 TÓNG KẾT:
+[2026-04-15 00:26:07] ✅ Email 1 (Welcome) - Gửi ngay khi đăng ký
+[2026-04-15 00:26:07] ✅ Email 2 (Nurture) - Gửi sau 2 ngày
+[2026-04-15 00:26:07] ✅ Email 3 (Sales) - Gửi sau 1 ngày
+[2026-04-15 00:26:07] ✅ Email 4 (Order Confirmation) - Gửi khi tạo đơn
+[2026-04-15 00:26:07] 
+💡 Lưu ý: Chế độ +test sẽ gửi Email 1,2,3 ngay lập tức thay vì chờ theo lịch
+[2026-04-15 00:26:07] 💡 Địa chỉ email test phải chứa '+test' để kích hoạt chế độ test
+[2026-04-15 00:26:07] 
+Log file: test_log.txt
