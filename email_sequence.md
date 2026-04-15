@@ -60,3 +60,34 @@ Thật ra, một bộ nail được chăm chút tỉ mỉ không chỉ làm đô
 **🔗 [LINK TRANG ĐẶT LỊCH/THANH TOÁN]**
 
 Tụi mình đang rất mong chờ được tự tay làm đẹp cho bạn. Hẹn gặp bạn tại tiệm nha!
+
+---
+
+## 📧 Email 4: Xác Nhận Đơn Hàng (Order Confirmation)
+**Gửi:** Ngay khi admin thêm đơn hàng vào hệ thống\
+**Subject:** ✨ Đơn hàng của bạn đã được xác nhận! Chuẩn bị tỏa sáng đi nào 💅
+
+---
+
+Chào {name},
+
+Cảm ơn bạn rất nhiều! Chúng mình vừa nhận được và xác nhận đơn hàng của bạn.
+
+**📋 Chi Tiết Đơn Hàng:**
+- **Dịch vụ:** {product_name}
+- **Số tiền:** ${amount}
+- **Mã đơn:** #{order_id}
+
+Bây giờ tiệp chúng mình sẽ chuẩn bị các trang thiết bị, màu sắc và kỹ thuật tốt nhất để chăm sóc cho bạn. Mình sẽ không vội vàng — vì chúng mình hiểu rằng những điều tuyệt vời cần phải có thời gian để hoàn thiện.
+
+**📍 Hướng Dẫn Tiếp Theo:**
+1. Nếu bạn chưa có lịch cụ thể, hãy gọi hoặc nhắn zalo để tụi mình sắp xếp thời gian ưu tiên cho bạn.
+2. Hãy chuẩn bị tinh thần thư giãn và tận hưởng khoảng thời gian dành riêng cho bản thân.
+3. Nếu bạn có yêu cầu đặc biệt (màu sắc, thiết kế, chỉnh sửa nail cũ), bạn hoàn toàn có thể chia sẻ với chúng mình.
+
+**💝 Lời Hứa Của Chúng Mình:**
+Mỗi lần bạn đến tiệm, chúng mình sẽ làm cho bộ móng của bạn không chỉ đẹp, mà còn khỏe mạnh và bền bỉ. Đó là cam kết của Happy Nail với mỗi khách hàng.
+
+Nếu có bất cứ thắc mắc gì trước ngày hẹn, bạn cứ liên hệ với chúng mình nhé. Chúng mình đang chờ được gặp bạn!
+
+Hẹn gặp bạn tại tiệm sớm! 💕
