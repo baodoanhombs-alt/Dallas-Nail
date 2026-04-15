@@ -36,6 +36,10 @@ def index():
 def checkout():
     return app.send_static_file('checkout.html')
 
+@app.route('/admin')
+def admin():
+    return app.send_static_file('admin.html')
+
 @app.route('/api/check_payment')
 def check_payment():
     phone = request.args.get('phone', '')
@@ -237,13 +241,20 @@ def handle_products():
         conn.commit()
         return jsonify({"status": "success", "id": cursor.lastrowid})
 
-@app.route('/api/products/<int:id>', methods=['DELETE'])
-def delete_product(id):
+@app.route('/api/products/<int:id>', methods=['DELETE', 'PUT'])
+def modify_product(id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM products WHERE id = ?", (id,))
-    conn.commit()
-    return jsonify({"status": "success"})
+    if request.method == 'DELETE':
+        cursor.execute("DELETE FROM products WHERE id = ?", (id,))
+        conn.commit()
+        return jsonify({"status": "success"})
+    elif request.method == 'PUT':
+        data = request.json
+        cursor.execute("""UPDATE products SET name = ?, price = ?, stock = ?, description = ? WHERE id = ?""",
+                       (data.get('name'), data.get('price'), data.get('stock'), data.get('description'), id))
+        conn.commit()
+        return jsonify({"status": "success"})
 
 
 # ================= CUSTOMERS API =================
@@ -262,13 +273,20 @@ def handle_customers():
         conn.commit()
         return jsonify({"status": "success", "id": cursor.lastrowid})
 
-@app.route('/api/customers/<int:id>', methods=['DELETE'])
-def delete_customer(id):
+@app.route('/api/customers/<int:id>', methods=['DELETE', 'PUT'])
+def modify_customer(id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM customers WHERE id = ?", (id,))
-    conn.commit()
-    return jsonify({"status": "success"})
+    if request.method == 'DELETE':
+        cursor.execute("DELETE FROM customers WHERE id = ?", (id,))
+        conn.commit()
+        return jsonify({"status": "success"})
+    elif request.method == 'PUT':
+        data = request.json
+        cursor.execute("""UPDATE customers SET name = ?, phone = ?, email = ?, zalo = ? WHERE id = ?""",
+                       (data.get('name'), data.get('phone'), data.get('email'), data.get('zalo'), id))
+        conn.commit()
+        return jsonify({"status": "success"})
 
 
 # ================= ORDERS API =================
