@@ -100,9 +100,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="config.js"></script>
 <script>
+    // Get API URL from config
+    const API_BASE = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
+    
     // Load sản phẩm
-    fetch('/api/products')
+    fetch(`${API_BASE}/api/products`)
         .then(r => r.json())
         .then(products => {
             const select = document.getElementById('product');
@@ -143,7 +147,7 @@
         const amount = opt.dataset.price;
         
         try {
-            const res = await fetch('/api/checkout', {
+            const res = await fetch(`${API_BASE}/api/checkout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -187,7 +191,7 @@
         document.getElementById('loading').classList.add('show');
         
         const interval = setInterval(() => {
-            fetch(`/api/check_payment?phone=${phone}`)
+            fetch(`${API_BASE}/api/check_payment?phone=${phone}`)
                 .then(r => r.json())
                 .then(result => {
                     if (result.success) {
