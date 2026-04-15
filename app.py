@@ -6,7 +6,15 @@ import datetime
 import threading
 
 app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app) # CHo phép Netlify gọi API từ Render
+
+# Enable CORS for all domains
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["*"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 DB_PATH = "brain.db"
 
 # Tự động tạo DB nếu chưa có trên Render
