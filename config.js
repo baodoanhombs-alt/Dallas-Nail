@@ -1,7 +1,11 @@
 // API Configuration
 // Auto-detect API base URL based on environment
 
-const API_BASE_URL = (() => {
+const API_BASE_URL = 'https://dallas-nail.onrender.com';
+
+// Fallback logic (commented for now)
+/*
+const API_BASE_URL_AUTO = (() => {
     if (typeof window !== 'undefined') {
         const host = window.location.hostname;
         const protocol = window.location.protocol;
@@ -21,6 +25,7 @@ const API_BASE_URL = (() => {
     
     return 'http://localhost:5000';
 })();
+*/
 
 // Export for use in other scripts
 if (typeof module !== 'undefined' && module.exports) {
