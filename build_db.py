@@ -7,6 +7,7 @@ WAITLIST_PATH = "waitlist.json"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     # 1. Bảng products
@@ -52,6 +53,20 @@ def init_db():
         )
     ''')
     
+    # Thêm sản phẩm mặc định nếu chưa có
+    cursor.execute("SELECT COUNT(*) as cnt FROM products")
+    if cursor.fetchone()['cnt'] == 0:
+        products = [
+            ("Dịch vụ Nail chuyên sâu", 10, "Chăm sóc móng tay chuyên sâu với sơn gel bền màu", 100),
+            ("Vẽ Art độc quyền", 5, "Thiết kế nail art theo yêu cầu", 100),
+            ("Pedicure Premium", 15, "Chăm sóc chân cao cấp với massage thư giãn", 100),
+            ("Ebook: Chăm sóc móng tại nhà", 2, "Ebook hướng dẫn chăm sóc móng tay toàn diện", 1000),
+        ]
+        for name, price, desc, stock in products:
+            cursor.execute("INSERT INTO products (name, price, description, stock) VALUES (?, ?, ?, ?)",
+                           (name, price, desc, stock))
+        print(f"Added {len(products)} default products")
+    
     # Import data từ waitlist.json
     if os.path.exists(WAITLIST_PATH):
         try:
@@ -62,10 +77,12 @@ def init_db():
                     name = item.get('name', 'Unknown')
                     phone = item.get('phone', '')
                     zalo = item.get('zalo', '')
+                    email = item.get('email', '')
                     
                     cursor.execute("SELECT id FROM customers WHERE phone = ?", (phone,))
                     if cursor.fetchone() is None:
-                        cursor.execute("INSERT INTO customers (name, phone, zalo) VALUES (?, ?, ?)", (name, phone, zalo))
+                        cursor.execute("INSERT INTO customers (name, phone, zalo, email) VALUES (?, ?, ?, ?)", 
+                                     (name, phone, zalo, email))
                         count += 1
                 print(f"Success: Imported {count} waitlist customers.")
         except Exception as e:
